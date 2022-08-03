@@ -19,7 +19,6 @@ async function run() {
         const userCollection = client.db("database").collection("users");
 
         app.post('/signup', async (req, res) => {
-            console.log(req.body);
             try {
                 const hashedPassword = await bcrypt.hash(req.body.password, 10);
                 const email = req.body.email;
@@ -38,6 +37,25 @@ async function run() {
                 }
             } catch {
                 res.send({ success: false, message: "Something went wrong!" });
+            }
+        })
+
+        app.post('/login', async (req, res) => {
+            const email = req.body.email;
+            const pass = req.body.password;
+            const isUser = await userCollection.findOne({ email });
+            if (!isUser) {
+                res.send({ success: false, message: "Email or password is incorrect!" });
+            }
+            try {
+                const isValidPass = await bcrypt.compare(pass, isUser.pass);
+                if (!isValidPass) {
+                    res.send({ success: false, message: "Email or password is incorrect!" });
+                } else {
+                    res.send({ success: true, message: "Logged in successfully!", user: isUser });
+                }
+            } catch {
+                res.send({ success: false, message: "User not found!" });
             }
         })
     }
