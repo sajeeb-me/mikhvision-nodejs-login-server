@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
+const bcrypt = require('bcrypt');
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const app = express();
 const port = process.env.PORT || 5000;
@@ -17,7 +18,28 @@ async function run() {
         await client.connect();
         const userCollection = client.db("database").collection("users");
 
-        console.log('MongoDB connected')
+        app.post('/signup', async (req, res) => {
+            console.log(req.body);
+            try {
+                const hashedPassword = await bcrypt.hash(req.body.password, 10);
+                const email = req.body.email;
+                const signedUpUser = {
+                    firstName: req.body.firstName,
+                    lastName: req.body.lastName,
+                    email: req.body.email,
+                    pass: hashedPassword
+                };
+                const alreadyExist = await userCollection.findOne({ email });
+                if (alreadyExist) {
+                    res.send({ success: false, message: "User already exist!" });
+                } else {
+                    const user = await userCollection.insertOne(signedUpUser);
+                    res.send({ success: true, message: "Signed up successfully!", user: signedUpUser });
+                }
+            } catch {
+                res.send({ success: false, message: "Something went wrong!" });
+            }
+        })
     }
     catch (error) {
         console.log(error);
